@@ -15,7 +15,7 @@
 * See the License for the specific language governing permissions and 
 * limitations under the License.
 */
-
+// 参考《x86-64 下函数调用及栈帧原理》来理解 https://zhuanlan.zhihu.com/p/27339191
 .globl coctx_swap
 #if !defined( __APPLE__ ) && !defined( __FreeBSD__ )
 .type  coctx_swap, @function
@@ -53,9 +53,9 @@ coctx_swap:
 	xorl %eax, %eax
 	ret
 
-#elif defined(__x86_64__)
+#elif defined(__x86_64__) // 在进入 coctx_swap 时，第一个参数值已经放到了 %rdi 寄存器中，第二个参数值已经放到了 %rsi 寄存器中，并且栈指针 %rsp 指向的位置即栈顶中存储的是父函数的返回地址。
 	leaq 8(%rsp),%rax
-	leaq 112(%rdi),%rsp
+	leaq 112(%rdi),%rsp // %rdi 存放的是coctx_swap 第一个参数的值，这一参数是指向 coctx_t 类型的指针，表示当前要切出的协程
 	pushq %rax
 	pushq %rbx
 	pushq %rcx
@@ -73,7 +73,7 @@ coctx_swap:
 	pushq %r14
 	pushq %r15
 	
-	movq %rsi, %rsp
+	movq %rsi, %rsp // 通过改变%rsp 的值，把某块内存当作栈来使用。让%rsp 指向 coctx_swap 第二个参数，这一参数表示要进入的协程。
 	popq %r15
 	popq %r14
 	popq %r13
@@ -88,8 +88,8 @@ coctx_swap:
 	popq %rcx
 	popq %rbx
 	popq %rsp
-	pushq %rax
+	pushq %rax // %rax 是要进入的目标协程的返回地址，即要恢复的执行点
 	
-	xorl %eax, %eax
-	ret
-#endif
+	xorl %eax, %eax // 把 %rax 低32位(即%eax)清0以实现地址对齐
+	ret // 弹出栈的内容，并跳转到弹出的内容表示的地址处，而弹出的内容正好是上面 pushq %rax 时压入的 %rax 的值，即之前保存的此协程的返回地址
+#endif // 利用了 ret 语句来实现修改指令寄存器 %rip 的目的，通过修改 %rip 来实现程序运行逻辑跳转。注意%rip 的值不能直接修改，只能通过 call 或 ret 之类的指令来间接修改。

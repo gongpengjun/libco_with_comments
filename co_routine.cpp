@@ -41,7 +41,7 @@
 #include <limits.h>
 
 extern "C"
-{
+{// 第一个参数表示要切出的协程的执行上下文，第二个参数表示要进入的协程的执行上下文
 	extern void coctx_swap( coctx_t *,coctx_t* ) asm("coctx_swap");
 };
 using namespace std;
@@ -624,10 +624,10 @@ void co_swap(stCoRoutine_t* curr, stCoRoutine_t* pending_co)
 		}
 	}
 
-	//swap context
+	//swap context 从curr协程切出，切入到pending_co协程
 	coctx_swap(&(curr->ctx),&(pending_co->ctx) );
 
-	//stack buffer may be overwrite, so get again;
+	//stack buffer may be overwrite, so get again; 此处是返回地址，即协程curr恢复时开始执行的位置
 	stCoRoutineEnv_t* curr_env = co_get_curr_thread_env();
 	stCoRoutine_t* update_occupy_co =  curr_env->occupy_co;
 	stCoRoutine_t* update_pending_co = curr_env->pending_co;
