@@ -601,8 +601,8 @@ void co_swap(stCoRoutine_t* curr, stCoRoutine_t* pending_co)
  	stCoRoutineEnv_t* env = co_get_curr_thread_env();
 
 	//get curr stack sp
-	char c;
-	curr->stack_sp= &c;
+	char c; // 按照C语言调用约定，参数先入栈，局部变量最后入栈，故变量c处于栈顶
+	curr->stack_sp= &c;//让当前routine的sp指向当前栈顶的变量: 'char c'
 
 	if (!pending_co->cIsShareStack)
 	{
